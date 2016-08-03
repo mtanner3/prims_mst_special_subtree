@@ -1,4 +1,6 @@
 
+import sys
+
 class simple_graph:
     edgedict = None
     weightddict = None
@@ -46,34 +48,58 @@ def main():
     edgecount = int(edgecount)
     for idx in range(edgecount):
         ssrc, sdest, sweight = raw_input().split()
-        sg.add_edge(int(ssrc), int(sdest), int(sweight))
-    start_node = int(raw_input())
+        sg.add_edge(ssrc, sdest, int(sweight))
+    start_node = raw_input().strip()
 
-    #full_nodelist = sg.get_nodelist()
-    done = False
-    origins = [start_node]
     total_weight = 0
 
-    #DEBUG = False
-    while done is False:
-        #if DEBUG: print "-" * 20
-        #if DEBUG: print "origins: %s" % origins
-        smallest_weight = None
-        smallest_destination = None
-        for src in origins:
-            for dest in sg.get_children(src):
-                weight = sg.get_weight(src, dest)
-                #if DEBUG: print "%s -> %s... %s" % (src, dest, weight)
-                if smallest_weight is None or weight < smallest_weight:
-                    if dest not in origins:
-                        smallest_weight = weight
-                        smallest_destination = dest
-            
-        #if DEBUG: print "smallest weight was to dest %s" % smallest_destination
+    origins = [start_node]
+    weights = {}
+    destination = {}
+    for dest in sg.get_children(start_node):
+        w = sg.get_weight(start_node, dest)
+        weights[dest] = w
+        destination[w] = dest
+
+    DEBUG = True
+    while True:
+        if DEBUG: print "=" * 20
+        if DEBUG: print "starting loop with weights:", weights
+        if DEBUG: print "starting loop with destinations:", destination
+        smallest_weight = sorted(destination.keys())[0]
+        smallest_dest = destination[smallest_weight]
         total_weight += smallest_weight
-        origins.append(smallest_destination)
+        origins.append(smallest_dest)
         if len(origins) == nodecount:
-            done = True
+            break
+        del weights[smallest_dest]
+        del destination[smallest_weight]
+        for d in weights.keys():
+            w = weights[d]
+            if w in destination.keys() and w < destination[w]:
+                destination[w] = d
+        if DEBUG: print "removed smallest destination %s (%s)." % (smallest_dest, smallest_weight)
+        if DEBUG: print "origins is now %s. Left with:" % origins
+        if DEBUG: print "weights:", weights
+        #if DEBUG: print "destinations:", destination
+        if DEBUG: print "assimilating new destinations"
+        for dest in sg.get_children(smallest_dest):
+            w = sg.get_weight(smallest_dest, dest)
+            if DEBUG: print "looking at %s --%d--> %s" % (smallest_dest, w, dest)
+            if dest in origins:
+                if DEBUG: print "  already in origins"
+                continue
+            if dest not in weights.keys():
+                if DEBUG: print "  new node. adding"
+                weights[dest] = w
+                destination[w] = dest
+            else:
+                if DEBUG: print "  existing node. checking for smallest"
+                if w < weights[dest]:
+                    weights[dest] = w
+                    destination[w] = dest
+        if DEBUG: print "ending loop with weights:", weights
+        #if DEBUG: print "ending loop with destinations:", destination
         
     print total_weight
 
